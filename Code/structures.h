@@ -14,7 +14,7 @@ struct Room;
 
 struct Patient {
     string name;
-    int year_of_birth;
+    int year_of_birth, age;
     int prior_ord_emergency;    // if the patient priority is `Emergency`, prior_ord_emergency = ord number of this patient among emergency patients (in 0-base);
                                 // otherwise `prior_ord_emergency` = -1
     int prior_ord_old;          // if the patient priority is `Old`, prior_ord_old = ord number of this patient among the old (in 0-base);
@@ -27,6 +27,7 @@ struct Patient {
     Patient () {
         name = "";
         year_of_birth = -1;
+        age = -1;
         prior_ord_emergency = prior_ord_old = prior_ord_children = prior_ord_normal = -1;
     }
 };
@@ -73,7 +74,7 @@ namespace var {
 /// @return 1 : if p1 > p2
 ///         0 : if p1 == p2
 ///         -1: if p1 < p2
-short comparePriority(Patient* p1, Patient* p2);
+short compare_priority(Patient* p1, Patient* p2);
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
 /// @brief merge 2 priority queues (PQs) into 1 priority queue
@@ -103,12 +104,12 @@ Patient* peak(PriorityQueue* pq);
 /// @brief to know whether priority queue is empty
 /// @param pq the given priority queue
 /// @return `true` if the PQ is empty; otherwise, returns `false`
-bool isEmpty(PriorityQueue* pq);
+bool is_empty(PriorityQueue* pq);
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
 /// @brief deallocate the patient and children of each node and then the node
 /// @param pq the PQ to be deallocated
-void deleteAllPQ(PriorityQueue* &pq);
+void delete_all_priority_queue(PriorityQueue* &pq);
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
 

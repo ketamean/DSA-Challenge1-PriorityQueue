@@ -18,7 +18,7 @@ void generate_command_arguments(char cmd[], int &argc, char* argv[]);
 void open_medical_room(int number_of_regular_room, int number_of_vip_room);
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
-void preorder_print(PriorityQueue* pq);
+void preorder_print(Node* p);
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
 /// @brief print all the patients in the given room
@@ -35,10 +35,10 @@ void print_patient_list(char type_of_room, int ord_number_of_the_room);
 void get_room_info(string room, char &type_of_room, int &no_of_room);
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
-/// @brief 
-/// @param tmp_task 
-/// @param task 
-/// @return if the given 
+/// @brief given command line arguments, do the task following to the cmd line
+/// @param argc 
+/// @param argv 
+/// @return if the given cmd line is "Exit", return false; otherwise, returns true
 bool do_the_task(int argc, const char* argv[]);
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////

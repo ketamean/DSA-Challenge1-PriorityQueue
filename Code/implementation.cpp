@@ -1,7 +1,7 @@
 // this part contains implementation for all functions in `structures.h`
 #include "structures.h"
 
-short comparePriority(Patient* p1, Patient* p2) {
+short compare_priority(Patient* p1, Patient* p2) {
     if (p1->prior_ord_emergency > p2->prior_ord_emergency) return 1;
     else if (p1->prior_ord_emergency > p2->prior_ord_emergency) return -1;
 
@@ -45,16 +45,17 @@ void generate_command_arguments(char cmd[], int &argc, char* argv[]) {
 }
 
 void open_medical_room(int number_of_regular_room, int number_of_vip_room) {
-
+    var::regular_room.reserve(number_of_regular_room);
+    var::vip_room.reserve(number_of_vip_room);
 }
 
-void preorder_print(Node* patient) {
-    if (patient == nullptr) return;
+void preorder_print(Node* p) {
+    if (p == nullptr) return;
 
     // print 1 patient
-    cout << patient->patient->name << " " << patient->patient->year_of_birth << endl;
-    preorder_print(patient->left);
-    preorder_print(patient->right);
+    cout << p->patient->name << " " << p->patient->year_of_birth << " " << endl;
+    preorder_print(p->left);
+    preorder_print(p->right);
 }
 
 void print_patient_list(char type_of_room, int ord_number_of_the_room) {
@@ -83,7 +84,7 @@ void get_room_info(string room, char &type_of_room, int &no_of_room) {
 
 bool do_the_task(int argc, const char* argv[]) {
     string tmp_task = string(argv[0]);
-    TASK task = getTask(tmp_task);
+    TASK task = get_task(tmp_task);
     switch (task) {
         case Open:
             {
@@ -181,7 +182,7 @@ bool do_the_task(int argc, const char* argv[]) {
     return 1;
 }
 
-TASK getTask(string task) {
+TASK get_task(string task) {
     if (task == "New") return New;
     if (task == "See") return See;
     if (task == "Update") return Update;
