@@ -3,6 +3,14 @@
 
 #include "structures.h"
 
+#define MAX_EMERGENCY_PATIENT_IN_REGULAR_ROOM 20
+
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+/// @brief to add a new patient to the room
+/// @param room room to add patient to
+/// @param item patient to be added
+void add_a_new_patient_to_room(Room* room, Patient* item);
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
 /// @brief given a character array that is the command line entered from keyboard. Convert the input cstring to command-line arguments
@@ -27,7 +35,6 @@ void preorder_print(Node* p);
 void print_patient_list(char type_of_room, int ord_number_of_the_room);
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
-
 /// @brief convert from string room name to 2 parts: type of room and ord number of room
 /// @param room given string room name
 /// @param type_of_room type of room return value
@@ -39,7 +46,7 @@ void get_room_info(string room, char &type_of_room, int &no_of_room);
 /// @param argc 
 /// @param argv 
 /// @return if the given cmd line is "Exit", return false; otherwise, returns true
-bool do_the_task(int argc, const char* argv[]);
+bool do_the_task(int argc, char* argv[]);
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
 /// @brief given the string determining the key task of the command: "New" or "See" or "Open" or "Update"
