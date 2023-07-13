@@ -33,10 +33,58 @@ short compare_priority(Patient* p1, Patient* p2) {
     return 0;
 }
 
+Node* merge1(Node *h1, Node *h2) {
+    if (!h1->left) h1->left = h2;
+    else {
+        h1->right = ns_priority_queue::merge(h1->right, h2);
+        if (h1->left->npl < h1->right->npl) {
+            swap(h1->left, h1->right);
+            h1->npl = h1->right->npl + 1;
+        }
+    }
+    return h1;
+
+Node* merge(Node *h1,Node *h2) {
+    if (!h1) return h2;
+    else if (!h2) return h1;
+    else if ((ns_priority_queue::compare_priority(h2->patient, h1->patient)) == -1) return ns_priority_queue::merge1(h1, h2);
+    else return ns_priority_queue::merge1(h2, h1);
+}
+
+void insertion(PriorityQueue* &pq, Patient* item) {
+    Node* node = new Node;
+    node->patient = item;
+    node->left = node->right = nullptr;
+    node->npl = 0;
+    pq->top = ns_priority_queue::merge(pq->top, node);
+    pq->total_patients++;
+}
+
+void deletion(PriorityQueue* &pq) { 
+    if (pq->top) {
+        Node* tmp = pq->top;
+        pq->top = ns_priority_queue::merge(pq->top->left, pq->top->right);
+        delete tmp;
+        pq->total_patients--;
+    }
+}
+
+Patient* peak(PriorityQueue* pq) {
+    if (pq->top) return pq->top->patient;
+    return nullptr;
+}
+
 bool is_empty(PriorityQueue* pq) {
     if (pq->top == nullptr) return true;
     return false;
 }
+
+void delete_all_priority_queue(PriorityQueue* &pq) {
+    while (!ns_priority_queue::is_empty(pq)) ns_priority_queue::deletion(pq);
+        delete pq;
+    pq = nullptr;
+}
+
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
@@ -177,14 +225,14 @@ bool do_the_task(int argc, char* argv[]) {
                 if (type_of_room == 'R') {
                     if (no_of_room <= global_variables::regular_room.size()) {
                         while (i < _number_of_finished_treatments && ns_priority_queue::is_empty(global_variables::regular_room[no_of_room-1]->patients) == false) {
-                            deletion(global_variables::regular_room[no_of_room-1]->patients);
+                            ns_priority_queue::deletion(global_variables::regular_room[no_of_room-1]->patients);
                             i++;
                         }
                     }
                 } else {
                     if (no_of_room <= global_variables::vip_room.size()) {
                         while (i < _number_of_finished_treatments && ns_priority_queue::is_empty(global_variables::vip_room[no_of_room-1]->patients) == false) {
-                            deletion(global_variables::vip_room[no_of_room-1]->patients);
+                            ns_priority_queue::deletion(global_variables::vip_room[no_of_room-1]->patients);
                             i++;
                         }
                     }

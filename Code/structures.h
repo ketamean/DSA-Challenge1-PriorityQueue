@@ -35,11 +35,13 @@ struct Node {
     Patient* patient;           // the patient in the node
     Node* left;                 // left child of the node
     Node* right;                // right child of the node
+    int npl;                    // null path length of the node (meaning the shortest path to the NULL node)
 
     Node () {
         patient = nullptr;
         left = nullptr;
         right = nullptr;
+        npl= 0;
     }
 };
 
@@ -69,7 +71,8 @@ namespace ns_priority_queue {
     /// @param h1 the first PQ
     /// @param h2 the second PQ
     /// @return the result PQ after merging
-    PriorityQueue* merge(PriorityQueue* h1, PriorityQueue* h2);
+    Node* merge1(Node *h1, Node *h2);
+    Node* merge(Node *h1,Node *h2);
     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
     /// @brief insert a new patient to a priority queue and INCREASE TOTAL PATIENTs IN THE QUEUE BY 1
@@ -124,4 +127,54 @@ namespace global_variables {
     vector<Room*> regular_room;// list of regular medical room
     vector<Room*> vip_room;    // list of vip medical room
 }
+
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+/// @brief compare 2 priority of 2 patients 
+/// @param p1 Patient 1
+/// @param p2 Patient 2
+/// @return 1 : if p1 > p2
+///         0 : if p1 == p2
+///         -1: if p1 < p2
+short compare_priority(Patient* p1, Patient* p2);
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+/// @brief merge 2 priority queues (PQs) into 1 priority queue
+/// @param h1 the first PQ
+/// @param h2 the second PQ
+/// @return the result PQ after merging
+//PriorityQueue* merge(PriorityQueue* h1, PriorityQueue* h2);
+Node* merge1(Node *h1, Node *h2);
+Node* merge(Node *h1,Node *h2); 
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+/// @brief insert a new patient to a priority queue and INCREASE TOTAL PATIENTs IN THE QUEUE BY 1
+/// @param pq 
+/// @param item 
+void insertion(PriorityQueue* &pq, Patient* item);
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+/// @brief delete the root item of the PQ
+/// @param pq the given PQ
+void deletion(PriorityQueue* &pq);
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+/// @brief show information of the root without removing it from the PQ
+/// @param pq the given PQ
+/// @return root of the PQ
+Patient* peak(PriorityQueue* pq);
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+/// @brief to know whether the PQ is empty
+/// @param pq the given PQ
+/// @return `true` if the PQ is empty; otherwise, returns `false`
+bool is_empty(PriorityQueue* pq);
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+/// @brief deallocate the patient and children of each node and then the node
+/// @param pq the PQ to be deallocated
+void delete_all_priority_queue(PriorityQueue* &pq);
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+
 #endif
