@@ -1,3 +1,4 @@
+#pragma once
 #ifndef _auxiliary
 #define _auxiliary
 
@@ -26,7 +27,11 @@ void generate_command_arguments(char cmd[], int &argc, char* argv[]);
 void open_medical_room(int number_of_regular_room, int number_of_vip_room);
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
-void preorder_print(Node* p);
+/// @brief print the patient using pre-order traversal in binary tree
+/// @param p root node of the tree
+/// @param type_of_room type of room (R or V)
+/// @param ord_number_of_the_room no. of the room (starts from 1)
+void preorder_print(Node* p, char &type_of_room, int &ord_number_of_the_room);
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
 /// @brief print all the patients in the given room
@@ -53,6 +58,23 @@ bool do_the_task(int argc, char* argv[]);
 /// @param task the given string
 /// @return the key task of the command in enumeration type TASK
 TASK get_task(string task);
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+/// @brief coordinate the given patient to an approriate active medical room
+/// @param p the patient who needs to be coordinated to an active medical room
+/// @param is_emergency determine whether this patient is an emergency case
+void coordinate_patient_to_room(Patient* p, bool is_emergency);
+// Auxiliary function
+/// @brief NOT DONE
+/// @param p patient who needs to be coordinated to a room
+/// @return the room
+Room* choose_room_for_new_patient(Patient* p);
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+/// @brief remove an amount of the highest priority patients of a room 
+/// @param room the room whose patients will be removed
+/// @param number_of_finished_patients number of patients will be removed
+void update_medical_room(Room* room, int number_of_finished_patients);
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
 #endif
