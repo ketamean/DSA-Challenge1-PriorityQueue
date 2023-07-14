@@ -3,7 +3,7 @@
 using namespace ns_priority_queue;
 using namespace global_variables;
 
-#define DEBUG 1
+#define DEBUG 0
 
 short ns_priority_queue::compare_priority(Patient* p1, Patient* p2) {
     // p1 and p2 are both either vip or non-vip
@@ -47,9 +47,9 @@ src: https://www.sanfoundry.com/cpp-program-implement-leftist-heap/
 */
 Node *ns_priority_queue::merge(Node * h1, Node * h2)
 {
-    if (h1 == NULL)
+    if (h1 == nullptr)
         return h2;
-    if (h2 == NULL)
+    if (h2 == nullptr)
         return h1;
     if (h1->patient < h2->patient)
         return merge1(h1, h2);
@@ -59,7 +59,7 @@ Node *ns_priority_queue::merge(Node * h1, Node * h2)
  
 Node *ns_priority_queue::merge1(Node * h1, Node * h2)
 {
-    if (h1->left == NULL)
+    if (h1->left == nullptr)
         h1->left = h2;
     else
     {
@@ -80,6 +80,7 @@ void ns_priority_queue::swapChildren(Node *t)
  
 void ns_priority_queue::insertion(PriorityQueue *&pq, Patient *item)
 {
+    if (pq == nullptr) pq = new PriorityQueue;
     Node *new_patient = new Node;
     new_patient->patient = item;
     new_patient->left = new_patient->right = NULL;
@@ -90,11 +91,15 @@ void ns_priority_queue::insertion(PriorityQueue *&pq, Patient *item)
  
 Patient *ns_priority_queue::peak(PriorityQueue *pq)
 {
-    return pq->top->patient;
+    if (pq)
+        return pq->top->patient;
+    else
+        return nullptr;
 }
  
 void ns_priority_queue::deletion(PriorityQueue *&pq)
 {
+    if (pq == nullptr) return;
     Node *oldRoot = pq->top;
     pq->top = merge(pq->top->left, pq->top->right);
     pq->total_patients--;
@@ -103,8 +108,8 @@ void ns_priority_queue::deletion(PriorityQueue *&pq)
 
 bool ns_priority_queue::is_empty(PriorityQueue *pq) 
 {
-    if (!pq->top) return true;
-    return false;
+    if (!pq || !pq->top) return true;
+    else return false;
 }
 
 void ns_priority_queue::delete_all_priority_queue(PriorityQueue *&pq) 
@@ -161,8 +166,8 @@ void open_medical_room(int number_of_regular_room, int number_of_vip_room) {
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
 void print_one_patient(Patient* p) {
-    cout << p->name << " " << p->age << " ";
-    if (p->prior_ord_vip >= 0) {
+    cout << "\t" << p->name << " " << p->age << " ";
+    if (p->prior_ord_vip > 0) {
         cout << "VIP ";
     }
 
@@ -181,7 +186,6 @@ void print_one_patient(Patient* p) {
 /////////////////////////////////////////////////////////////////
 void preorder_print(Node* p) {
     if (p == nullptr) {
-        cout << "End." << endl;
         return;
     }
     // print all the patients using pre-order traversal in binary tree
@@ -270,7 +274,7 @@ bool do_the_task(int argc, char* argv[], bool print_new_patient) {
                             char* file_argv[6], *tmp_cstr;
                             int file_argc;
                             
-                            if (!ifs.eof()) {
+                            if (!ifs.is_open()) {
                                 cout << "Cannot open file " << string(argv[1]) << endl;
                                 break;
                             }
@@ -350,7 +354,7 @@ bool do_the_task(int argc, char* argv[], bool print_new_patient) {
                         else
                             cout << 0 << endl;
                     }
-
+                    cout << "==========" << endl;
                     if (vip_room.size() > 0) {
                         cout << endl << "VIP medical room." << endl;
                     }

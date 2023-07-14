@@ -1,6 +1,6 @@
 #include "implementation.cpp"
 
-#define DEBUG 1
+#define DEBUG 0
 
 // argv[0] = executable file name
 int main()
