@@ -93,6 +93,7 @@ namespace ns_priority_queue
     /// @return the result PQ after merging
     Node *merge1(Node *h1, Node *h2);
     Node *merge(Node *h1, Node *h2);
+    void swapChildren(Node * t);
     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
     /// @brief insert a new patient to a priority queue and INCREASE TOTAL PATIENTs IN THE QUEUE BY 1

@@ -42,64 +42,76 @@ short ns_priority_queue::compare_priority(Patient* p1, Patient* p2) {
     return 0;
 }
 
-Node* ns_priority_queue::merge1(Node *h1, Node *h2) {
-    if (h1->left == nullptr) h1->left = h2;
-    else {
-        h1->right = ns_priority_queue::merge(h1->right, h2);
-        if (h1->left->npl < h1->right->npl) {
-            swap(h1->left, h1->right);
-            h1->npl = h1->right->npl + 1;
-        }
+/*
+src: https://www.sanfoundry.com/cpp-program-implement-leftist-heap/
+*/
+Node *ns_priority_queue::merge(Node * h1, Node * h2)
+{
+    if (h1 == NULL)
+        return h2;
+    if (h2 == NULL)
+        return h1;
+    if (h1->patient < h2->patient)
+        return merge1(h1, h2);
+    else
+        return merge1(h2, h1);
+}
+ 
+Node *ns_priority_queue::merge1(Node * h1, Node * h2)
+{
+    if (h1->left == NULL)
+        h1->left = h2;
+    else
+    {
+        h1->right = merge(h1->right, h2);
+        if (h1->left->npl < h1->right->npl)
+            swapChildren(h1);
+        h1->npl = h1->right->npl + 1;
     }
     return h1;
 }
-
-Node* ns_priority_queue::merge(Node *h1, Node *h2) {
-    if (h1 == nullptr)
-        return h2;
-    else if (h2 == nullptr)
-        return h1;
-    else if ((ns_priority_queue::compare_priority(h2->patient, h1->patient)) == -1)
-        return ns_priority_queue::merge1(h1, h2);
-    else
-        return ns_priority_queue::merge1(h2, h1);
+ 
+void ns_priority_queue::swapChildren(Node *t)
+{
+    Node *tmp = t->left;
+    t->left = t->right;
+    t->right = tmp;
 }
-
-void ns_priority_queue::insertion(PriorityQueue* &pq, Patient* item) {
-    Node* node = new Node;
-    node->patient = item;
-    node->left = node->right = nullptr;
-    node->npl = 0;
-    pq->top = ns_priority_queue::merge(pq->top, node);
+ 
+void ns_priority_queue::insertion(PriorityQueue *&pq, Patient *item)
+{
+    Node *new_patient = new Node;
+    new_patient->patient = item;
+    new_patient->left = new_patient->right = NULL;
+    new_patient->npl = 0;
+    pq->top = ns_priority_queue::merge(pq->top, new_patient);
     pq->total_patients++;
 }
-
-void ns_priority_queue::deletion(PriorityQueue* &pq) { 
-    if (pq->top) {
-        Node* tmp = pq->top;
-        pq->top = ns_priority_queue::merge(pq->top->left, pq->top->right);
-        delete tmp->patient;
-        delete tmp;
-        pq->total_patients--;
-    }
+ 
+Patient *ns_priority_queue::peak(PriorityQueue *pq)
+{
+    return pq->top->patient;
+}
+ 
+void ns_priority_queue::deletion(PriorityQueue *&pq)
+{
+    Node *oldRoot = pq->top;
+    pq->top = merge(pq->top->left, pq->top->right);
+    pq->total_patients--;
+    delete oldRoot;
 }
 
-Patient* ns_priority_queue::peak(PriorityQueue* pq) {
-    if (pq->top) return pq->top->patient;
-    return nullptr;
-}
-
-bool ns_priority_queue::is_empty(PriorityQueue* pq) {
-    if (pq->top == nullptr) return true;
+bool ns_priority_queue::is_empty(PriorityQueue *pq) 
+{
+    if (!pq->top) return true;
     return false;
 }
 
-void ns_priority_queue::delete_all_priority_queue(PriorityQueue* &pq) {
-    while (!ns_priority_queue::is_empty(pq)) ns_priority_queue::deletion(pq);
-        delete pq;
-    pq = nullptr;
+void ns_priority_queue::delete_all_priority_queue(PriorityQueue *&pq) 
+{
+    while (!is_empty(pq)) deletion(pq);
+    delete pq;
 }
-
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
