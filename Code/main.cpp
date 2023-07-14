@@ -18,6 +18,7 @@ int main()
 
         strcpy(cmd_cstr, cmd_str.c_str());
         generate_command_arguments(cmd_cstr, argc, argv);
+
 #if DEBUG
         cout << "argc = " << argc << endl;
         cout << "argvs: ";
@@ -27,6 +28,7 @@ int main()
         }
         cout << endl;
 #endif
+
         continue_doing_task = do_the_task(argc, argv, false);
 
         // deallocate argv[i]

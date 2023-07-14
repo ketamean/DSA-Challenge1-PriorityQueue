@@ -149,6 +149,8 @@ namespace global_variables
 {
     vector<Room *> regular_room; // list of regular medical room
     vector<Room *> vip_room;     // list of vip medical room
+    long total_patients_in_regular_room = 0;
+    long total_patients_in_vip_room = 0;
 } // end namespace global_variables
 
 #endif

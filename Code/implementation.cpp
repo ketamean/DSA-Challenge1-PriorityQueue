@@ -150,19 +150,22 @@ void generate_command_arguments(char cmd[], int &argc, char *argv[])
 void open_medical_room(int number_of_regular_room, int number_of_vip_room)
 {
     regular_room.reserve(number_of_regular_room);
+    Room *r = nullptr;
     for (int i = 0; i < number_of_regular_room; ++i)
     {
-        regular_room[i] = new Room;
-        regular_room[i]->type = 'R';
-        regular_room[i]->no = i + 1;
+        r = new Room;
+        r->type = 'R';
+        r->no = i + 1;
+        regular_room.push_back(r);
     }
 
     vip_room.reserve(number_of_vip_room);
-    for (int i = 0; i < number_of_vip_room; ++i)
+    for (int i = 0; i < number_of_regular_room; ++i)
     {
-        vip_room[i] = new Room;
-        vip_room[i]->type = 'V';
-        vip_room[i]->no = i + 1;
+        r = new Room;
+        r->type = 'R';
+        r->no = i + 1;
+        vip_room.push_back(r);
     }
 }
 /////////////////////////////////////////////////////////////////
@@ -190,7 +193,8 @@ void preorder_print(Node *p)
 void print_patient_list(Room *room)
 {
     cout << "Room " << (char)room->type << room->no << ":" << endl;
-    preorder_print(room->patients->top);
+    if (room->patients)
+        preorder_print(room->patients->top);
 }
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
@@ -247,6 +251,7 @@ bool do_the_task(int argc, char *argv[], bool print_new_patient)
                 cout << "Cannot open file " << string(argv[1]) << endl;
                 break;
             }
+            cout << "Adding patients..." << endl;
             while (!ifs.eof())
             {
                 getline(ifs, tmp_str);
@@ -304,7 +309,7 @@ bool do_the_task(int argc, char *argv[], bool print_new_patient)
         if (p)
         {
             p->age = CURRENT_YEAR - p->year_of_birth;
-            cout << p->age;
+            cout << p->age << endl;
             if (p->age >= 60)
             {
                 p->prior_ord_old = 1;
@@ -314,6 +319,34 @@ bool do_the_task(int argc, char *argv[], bool print_new_patient)
                 p->prior_ord_children = 1;
             }
             coordinate_patient_to_room(p);
+
+            if (print_new_patient)
+            {
+                cout << p->name << " ";
+                if (p->prior_ord_vip >= 0)
+                {
+                    cout << "VIP ";
+                }
+
+                if (p->prior_ord_emergency >= 0)
+                {
+                    cout << "Emergency ";
+                }
+                else if (p->prior_ord_old >= 0)
+                {
+                    cout << "Old ";
+                }
+                else if (p->prior_ord_children >= 0)
+                {
+                    cout << "Children ";
+                }
+                else
+                {
+                    cout << "Normal patient ";
+                }
+
+                cout << p->room->type << p->room->no << endl;
+            }
         }
     }
     break;
@@ -326,9 +359,12 @@ bool do_the_task(int argc, char *argv[], bool print_new_patient)
             cout << "Regular medical room." << endl;
             for (int i = 0; i < regular_room.size(); ++i)
             {
-                cout << "1";
-                // print_patient_list(regular_room[i]);
-                // cout << "Number of waiting patients: " << regular_room[i]->patients->total_patients << endl;
+                print_patient_list(regular_room[i]);
+                cout << "Number of waiting patients: ";
+                if (regular_room[i]->patients)
+                    cout << regular_room[i]->patients->total_patients << endl;
+                else
+                    cout << 0 << endl;
             }
 
             if (vip_room.size() > 0)
@@ -339,7 +375,11 @@ bool do_the_task(int argc, char *argv[], bool print_new_patient)
             for (int i = 0; i < vip_room.size(); ++i)
             {
                 print_patient_list(vip_room[i]);
-                cout << "Number of waiting patients: " << vip_room[i]->patients->total_patients << endl;
+                cout << "Number of waiting patients: ";
+                if (vip_room[i]->patients)
+                    cout << vip_room[i]->patients->total_patients << endl;
+                else
+                    cout << 0 << endl;
             }
         }
         else
@@ -406,7 +446,6 @@ void coordinate_patient_to_room(Patient *p)
     cout << "choose room" << endl;
     Room *room_to_add = choose_room_for_new_patient(p);
 
-    cout << "done choose room" << endl;
     if (p->prior_ord_emergency == 1)
     {
         p->prior_ord_emergency = room_to_add->ord_emergency++;
@@ -424,7 +463,7 @@ void coordinate_patient_to_room(Patient *p)
         p->prior_ord_normal = room_to_add->ord_normal++;
     }
     cout << "insert" << endl;
-    insertion(room_to_add->patients, p);
+    ns_priority_queue::insertion(room_to_add->patients, p);
     cout << "done insert" << endl;
 }
 /////////////////////////////////////////////////////////////////
@@ -436,14 +475,19 @@ void coordinate_patient_to_room(Patient *p)
 // which is room prior == min, and patient of room - min patien <= %, and emer case <= max
 Room *choose_room_for_new_patient(Patient *&p)
 {
+    if (p == nullptr)
+        return nullptr;
+
     if (p->prior_ord_vip)
     {
         // add vip
-        if (p->prior_ord_emergency || p->prior_ord_old == 1 || p->prior_ord_children == 1)
+        if (p->prior_ord_emergency == 1 || p->prior_ord_old == 1 || p->prior_ord_children == 1)
         {
             int min_patients = 0, total_patients = 0, min_prior = 0;
             for (int i = 0; i < vip_room.size(); i++)
             {
+                if (vip_room[i]->patients == nullptr)
+                    return vip_room[i];
                 total_patients += vip_room[i]->patients->total_patients;
 
                 // find minimum number of patients
@@ -475,6 +519,10 @@ Room *choose_room_for_new_patient(Patient *&p)
             int ind_min = 0;
             for (int i = 0; i < vip_room.size(); i++)
             {
+                if (vip_room[i]->patients == nullptr)
+                {
+                    return vip_room[i];
+                }
                 if (vip_room[i]->patients->total_patients < vip_room[ind_min]->patients->total_patients)
                 {
                     ind_min = i;
@@ -491,14 +539,23 @@ Room *choose_room_for_new_patient(Patient *&p)
             int min_patients = 0, total_patients = 0, min_prior = 0;
             for (int i = 0; i < regular_room.size(); i++)
             {
+                if (regular_room[i]->patients == nullptr)
+                    return regular_room[i];
                 total_patients += regular_room[i]->patients->total_patients;
-                if (regular_room[i]->patients->total_patients < min_patients)
+                if (regular_room[i]->patients == nullptr)
                 {
-                    min_patients = regular_room[i]->patients->total_patients;
+                    min_prior = min_patients = 0;
                 }
-                if (regular_room[i]->patients->total_patients - regular_room[i]->ord_normal < min_prior)
+                else
                 {
-                    min_prior = regular_room[i]->patients->total_patients - regular_room[i]->ord_normal;
+                    if (regular_room[i]->patients->total_patients < min_patients)
+                    {
+                        min_patients = regular_room[i]->patients->total_patients;
+                    }
+                    if (regular_room[i]->patients->total_patients - regular_room[i]->ord_normal < min_prior)
+                    {
+                        min_prior = regular_room[i]->patients->total_patients - regular_room[i]->ord_normal;
+                    }
                 }
             }
 
@@ -506,9 +563,13 @@ Room *choose_room_for_new_patient(Patient *&p)
 
             for (int i = 0; i < regular_room.size(); i++)
             {
+                if (regular_room[i]->patients == nullptr)
+                {
+                    return regular_room[i];
+                }
                 if (regular_room[i]->patients->total_patients == min_patients &&
-                    regular_room[i]->patients->total_patients - regular_room[i]->ord_normal - min_prior < per &&
-                    p->prior_ord_vip + regular_room[i]->ord_emergency <= MAX_EMERGENCY_PATIENT_IN_REGULAR_ROOM)
+                    regular_room[i]->patients->total_patients - regular_room[i]->ord_normal - min_prior <= per &&
+                    p->prior_ord_emergency + regular_room[i]->ord_emergency <= MAX_EMERGENCY_PATIENT_IN_REGULAR_ROOM)
                 {
                     return regular_room[i];
                 }
@@ -521,6 +582,8 @@ Room *choose_room_for_new_patient(Patient *&p)
             int ind_min = 0;
             for (int i = 0; i < regular_room.size(); i++)
             {
+                if (regular_room[i]->patients == nullptr)
+                    return regular_room[i];
                 if (regular_room[i]->patients->total_patients < regular_room[ind_min]->patients->total_patients)
                 {
                     ind_min = i;
@@ -546,12 +609,14 @@ void update_medical_room(Room *room, int number_of_finished_patients)
             int ind_max = 0, max = 0;
             for (int i = 0; i < regular_room.size(); i++)
             {
-                if (regular_room[i]->patients->total_patients - regular_room[i]->ord_normal > max)
+                if (regular_room[i]->patients && regular_room[i]->patients->total_patients - regular_room[i]->ord_normal > max)
                 {
                     ind_max = i;
                     max = regular_room[i]->patients->total_patients - regular_room[i]->ord_normal;
                 }
             }
+            if (regular_room[ind_max] == room || regular_room[ind_max]->patients == nullptr)
+                return;
             // copy and paste to room
             Patient *p = ns_priority_queue::peak(regular_room[ind_max]->patients);
             Patient *copy_p = new Patient;
@@ -574,12 +639,14 @@ void update_medical_room(Room *room, int number_of_finished_patients)
             int ind_max = 0, max = 0;
             for (int i = 0; i < vip_room.size(); i++)
             {
-                if (vip_room[i]->patients->total_patients - vip_room[i]->ord_normal > max)
+                if (vip_room[i]->patients && vip_room[i]->patients->total_patients - vip_room[i]->ord_normal > max)
                 {
                     ind_max = i;
                     max = vip_room[i]->patients->total_patients - vip_room[i]->ord_normal;
                 }
             }
+            if (vip_room[ind_max] == room || vip_room[ind_max]->patients == nullptr)
+                return;
             // copy and paste to room
             Patient *p = ns_priority_queue::peak(vip_room[ind_max]->patients);
             Patient *copy_p = new Patient;
