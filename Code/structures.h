@@ -131,6 +131,7 @@ struct Room {
 namespace global_variables {
     vector<Room*> regular_room;// list of regular medical room
     vector<Room*> vip_room;    // list of vip medical room
+    long total_patients_in_hospital = 0;
 } // end namespace global_variables
 
 #endif

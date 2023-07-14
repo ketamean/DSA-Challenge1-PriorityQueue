@@ -128,13 +128,20 @@ void generate_command_arguments(char cmd[], int &argc, char* argv[]) {
 /////////////////////////////////////////////////////////////////
 void open_medical_room(int number_of_regular_room, int number_of_vip_room) {
     regular_room.reserve(number_of_regular_room);
+    Room* r = nullptr;
     for (int i = 0; i < number_of_regular_room; ++i) {
-        regular_room[i] = new Room;
+        r = new Room;
+        r->type = 'R';
+        r->no = i+1;
+        regular_room.push_back(r);
     }
 
     vip_room.reserve(number_of_vip_room);
-    for (int i = 0; i < number_of_vip_room; ++i) {
-        vip_room[i] = new Room;
+    for (int i = 0; i < number_of_regular_room; ++i) {
+        r = new Room;
+        r->type = 'R';
+        r->no = i+1;
+        vip_room.push_back(r);
     }
 }
 /////////////////////////////////////////////////////////////////
@@ -158,7 +165,8 @@ void preorder_print(Node* p) {
 /////////////////////////////////////////////////////////////////
 void print_patient_list(Room* room) {
     cout << "Room " << (char)room->type << room->no << ":" << endl;
-    preorder_print(room->patients->top);
+    if (room->patients)
+        preorder_print(room->patients->top);
 }
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
@@ -204,6 +212,7 @@ bool do_the_task(int argc, char* argv[], bool print_new_patient) {
                         cout << "Cannot open file " << string(argv[1]) << endl;
                         break;
                     }
+                    cout << "Adding patients..." << endl; 
                     while (!ifs.eof()) {
                         getline(ifs, tmp_str);
                         strcpy(tmp_cstr, tmp_str.c_str());
@@ -249,13 +258,32 @@ bool do_the_task(int argc, char* argv[], bool print_new_patient) {
 
                 if (p) {
                     p->age = CURRENT_YEAR - p->year_of_birth;
-                    cout << p->age;
+                    cout << p->age << endl;
                     if (p->age >= 60) {
                         p->prior_ord_old = 1;
                     } else if (p->age <= 10) {
                         p->prior_ord_children = 1;
                     }
                     coordinate_patient_to_room(p);
+
+                    if (print_new_patient) {
+                        cout << p->name << " ";
+                        if (p->prior_ord_vip >= 0) {
+                            cout << "VIP ";
+                        }
+
+                        if (p->prior_ord_emergency >= 0) {
+                            cout << "Emergency ";
+                        } else if (p->prior_ord_old >= 0) {
+                            cout << "Old ";
+                        } else if (p->prior_ord_children >= 0) {
+                            cout << "Children ";
+                        } else {
+                            cout << "Normal patient ";
+                        }
+                        
+                        cout << p->room->type << p->room->no << endl;
+                    }
                 }
             }
             break;
@@ -267,7 +295,11 @@ bool do_the_task(int argc, char* argv[], bool print_new_patient) {
                     cout << "Regular medical room." << endl;
                     for (int i = 0; i < regular_room.size(); ++i) {
                         print_patient_list(regular_room[i]);
-                        cout << "Number of waiting patients: " << regular_room[i]->patients->total_patients << endl;
+                        cout << "Number of waiting patients: ";
+                        if (regular_room[i]->patients)
+                            cout << regular_room[i]->patients->total_patients << endl;
+                        else
+                            cout << 0 << endl;
                     }
 
                     if (vip_room.size() > 0) {
@@ -275,7 +307,11 @@ bool do_the_task(int argc, char* argv[], bool print_new_patient) {
                     }
                     for (int i = 0; i < vip_room.size(); ++i) {
                         print_patient_list(vip_room[i]);
-                        cout << "Number of waiting patients: " << vip_room[i]->patients->total_patients << endl;
+                        cout << "Number of waiting patients: ";
+                        if (vip_room[i]->patients)
+                            cout << vip_room[i]->patients->total_patients << endl;
+                        else
+                            cout << 0 << endl;                    
                     }
                 } else {
                     // > See medical_room_ID
@@ -331,7 +367,7 @@ void coordinate_patient_to_room(Patient* p) {
     // choose an approriate room
     cout << "choose room" << endl;
     Room* room_to_add = choose_room_for_new_patient(p);
-    cout << "done choose room" << endl;
+
     if (p->prior_ord_emergency == 1) {
         p->prior_ord_emergency = room_to_add->ord_emergency++;
     } else if (p->prior_ord_old == 1) {
