@@ -3,6 +3,8 @@
 using namespace ns_priority_queue;
 using namespace global_variables;
 
+#define DEBUG 1
+
 short ns_priority_queue::compare_priority(Patient* p1, Patient* p2) {
     // p1 and p2 are both either vip or non-vip
 
@@ -216,7 +218,7 @@ bool do_the_task(int argc, char* argv[], bool print_new_patient) {
                 enum CASE {NEW_E, NEW_V, NEW_E_V, NEW_};
                 CASE status;
                 Patient* p = nullptr;
-                if (print_new_patient) { // call do_the_task() within the command `New filename`
+                if (print_new_patient) { // command `New filename` recalls function `do_the_task()`
                     if (argc == 3) {
                         // > New name year_of_birth
                         status = NEW_;
@@ -276,11 +278,12 @@ bool do_the_task(int argc, char* argv[], bool print_new_patient) {
                             ifs.close();
                             break;
                         }
-
                     }
-                }
+                } // endif print_new_patient
 
                 p = new Patient;
+
+                // get p->name and p->year_of_birth
                 if (print_new_patient == false) {
                     cout << ">> ";
                     string tmp;
@@ -297,54 +300,29 @@ bool do_the_task(int argc, char* argv[], bool print_new_patient) {
                     p->year_of_birth = stoi(string(pch));
                 } else {
                     p->name = string(argv[argc - 2]);
-                    p->age = stoi(string(argv[argc-1]));
+                    p->year_of_birth = stoi(string(argv[argc-1]));
                 }
-                
-                if (argc == 3) {
-                    // > New
-                    p = new Patient;
-                    p->name = string(argv[1]);
-                    p->year_of_birth = stoi(string(argv[2]));
-                    p->prior_ord_vip = false;
-                } else if (argc == 4) {
-                    if (argv[1][0] == 'e') {
-                        // > New e
-                        p = new Patient;
-                        p->name = string(argv[2]);
-                        p->year_of_birth = stoi(string(argv[3]));
-                        p->prior_ord_vip = false;
-                        p->prior_ord_emergency = 1;
-                    } else if (argv[1][0] == 'v') {
-                        // > New v
-                        p = new Patient;
-                        p->name = string(argv[2]);
-                        p->year_of_birth = stoi(string(argv[3]));
-                        p->prior_ord_vip = true;
-                    }
-                } else if (argc == 5) {
-                    // > New e v
-                    p = new Patient;
-                    p->name = string(argv[3]);
-                    p->year_of_birth = stoi(string(argv[4]));
-                    p->prior_ord_vip = true;
+                p->age = CURRENT_YEAR - p->year_of_birth;
+
+                if (status == NEW_E || status == NEW_E_V) {
                     p->prior_ord_emergency = 1;
                 }
-                
-
-                if (p) {
-                    p->age = CURRENT_YEAR - p->year_of_birth;
-                    if (p->age >= 60) {
-                        p->prior_ord_old = 1;
-                    } else if (p->age <= 10) {
-                        p->prior_ord_children = 1;
-                    }
-                    coordinate_patient_to_room(p);
-
-                    if (print_new_patient) {
-                        print_one_patient(p);
-                    }
+                if (status == NEW_V || status == NEW_E_V) {
+                    p->prior_ord_vip = 1;
                 }
-            }
+                
+                if (p->age >= 60) {
+                    p->prior_ord_old = 1;
+                } else if (p->age <= 10) {
+                    p->prior_ord_children = 1;
+                }
+
+                coordinate_patient_to_room(p);
+
+                if (print_new_patient) {
+                    print_one_patient(p);
+                }
+            } // end case New
             break;
 
         case See:
@@ -424,7 +402,13 @@ void coordinate_patient_to_room(Patient* p) {
     new_item->left = new_item->right = nullptr;
 
     // choose an approriate room
+    #if DEBUG
+        cout << "choose room" << endl;
+    #endif
     Room* room_to_add = choose_room_for_new_patient(p);
+    #if DEBUG
+        cout << "DONE choose room" << endl;
+    #endif
     p->room = room_to_add;
     if (p->prior_ord_emergency == 1) {
         p->prior_ord_emergency = room_to_add->ord_emergency++;
@@ -435,7 +419,13 @@ void coordinate_patient_to_room(Patient* p) {
     } else {
         p->prior_ord_normal = room_to_add->ord_normal++;
     }
+    #if DEBUG
+        cout << "insert patient to room" << endl;
+    #endif
     insertion(room_to_add->patients, p);
+    #if DEBUG
+        cout << "DONE insert patient to room" << endl;
+    #endif
 }
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
