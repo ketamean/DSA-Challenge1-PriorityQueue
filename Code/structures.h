@@ -6,6 +6,7 @@
 #include <vector>
 #include <fstream>
 #include <cmath>
+#include <iomanip>
 
 using namespace std;
 enum TASK
