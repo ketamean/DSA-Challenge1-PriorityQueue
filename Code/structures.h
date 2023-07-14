@@ -18,7 +18,6 @@ enum TASK
     WRONG_CMD
 };
 #define CURRENT_YEAR 2023
-
 struct Room;
 
 struct Patient
@@ -34,6 +33,7 @@ struct Patient
                              // otherwise `prior_ord_children` = -1
     int prior_ord_normal;    // if the patient priority is `Normal`, prior_ord_normal = ord number of this patient among the normal (in 0-base);
                              // otherwise `prior_ord_normal` = -1
+    int other;               // other of adding
     Room *room;
     Patient()
     {
@@ -41,6 +41,7 @@ struct Patient
         year_of_birth = -1;
         age = -1;
         prior_ord_vip = false;
+        other = -1;
         prior_ord_emergency = prior_ord_old = prior_ord_children = prior_ord_normal = -1;
         room = nullptr;
     }
@@ -152,6 +153,8 @@ namespace global_variables
     vector<Room *> vip_room;     // list of vip medical room
     long total_patients_in_regular_room = 0;
     long total_patients_in_vip_room = 0;
+    long otherhospital = 1; // other of adding to the hospital
+
 } // end namespace global_variables
 
 #endif

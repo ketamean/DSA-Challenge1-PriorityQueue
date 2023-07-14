@@ -45,16 +45,38 @@ short ns_priority_queue::compare_priority(Patient* p1, Patient* p2) {
 /*
 src: https://www.sanfoundry.com/cpp-program-implement-leftist-heap/
 */
+
+int PriorityPatient(Patient *p)
+{
+    if(p == nullptr)
+        return 0;
+    int priorty = 0;
+    if(p->prior_ord_children >= 0)
+        priorty += 1;
+    if(p->prior_ord_old >= 0)
+        priorty += 2;
+    if(p->prior_ord_emergency >= 0)
+        priorty +=3;
+    return priorty;
+}
+
 Node *ns_priority_queue::merge(Node * h1, Node * h2)
 {
     if (h1 == nullptr)
         return h2;
     if (h2 == nullptr)
         return h1;
-    if (h1->patient < h2->patient)
+    if (PriorityPatient(h1->patient) > PriorityPatient(h2->patient))
         return merge1(h1, h2);
-    else
+    else if(PriorityPatient(h1->patient) < PriorityPatient(h2->patient))
         return merge1(h2, h1);
+    else 
+    {
+        if(h1->patient->other < h2->patient->other)
+            return merge1(h1, h2);
+        else 
+            return merge1(h2, h1);
+    }
 }
  
 Node *ns_priority_queue::merge1(Node * h1, Node * h2)
@@ -91,7 +113,7 @@ void ns_priority_queue::insertion(PriorityQueue *&pq, Patient *item)
  
 Patient *ns_priority_queue::peak(PriorityQueue *pq)
 {
-    if (pq)
+    if (pq && pq->top)
         return pq->top->patient;
     else
         return nullptr;
@@ -99,10 +121,11 @@ Patient *ns_priority_queue::peak(PriorityQueue *pq)
  
 void ns_priority_queue::deletion(PriorityQueue *&pq)
 {
-    if (pq == nullptr) return;
+    if (pq == nullptr || pq->top == nullptr) return;
     Node *oldRoot = pq->top;
     pq->top = merge(pq->top->left, pq->top->right);
     pq->total_patients--;
+    delete oldRoot->patient;
     delete oldRoot;
 }
 
@@ -156,9 +179,9 @@ void open_medical_room(int number_of_regular_room, int number_of_vip_room) {
     }
 
     vip_room.reserve(number_of_vip_room);
-    for (int i = 0; i < number_of_regular_room; ++i) {
+    for (int i = 0; i < number_of_vip_room; ++i) {
         r = new Room;
-        r->type = 'R';
+        r->type = 'V';
         r->no = i+1;
         vip_room.push_back(r);
     }
@@ -167,18 +190,18 @@ void open_medical_room(int number_of_regular_room, int number_of_vip_room) {
 /////////////////////////////////////////////////////////////////
 void print_one_patient(Patient* p) {
     cout << "\t" << p->name << " " << p->age << " ";
-    if (p->prior_ord_vip > 0) {
+    if (p->prior_ord_vip) {
         cout << "VIP ";
+    } else {
+        cout << "Normal-patient ";
     }
 
-    if (p->prior_ord_emergency >= 0) {
+    if (p->prior_ord_emergency >= 0) 
         cout << "Emergency ";
-    } else if (p->prior_ord_old >= 0) {
+    if (p->prior_ord_old >= 0) {
         cout << "Old ";
     } else if (p->prior_ord_children >= 0) {
         cout << "Children ";
-    } else {
-        cout << "Normal-patient ";
     }
     cout << p->room->type << p->room->no << endl;
 }
@@ -271,7 +294,7 @@ bool do_the_task(int argc, char* argv[], bool print_new_patient) {
                             ifstream ifs;
                             ifs.open(string(argv[1]));
                             string tmp_str;
-                            char* file_argv[6], *tmp_cstr;
+                            char* file_argv[6], tmp_cstr[200];
                             int file_argc;
                             
                             if (!ifs.is_open()) {
@@ -333,6 +356,9 @@ bool do_the_task(int argc, char* argv[], bool print_new_patient) {
                     p->prior_ord_children = 1;
                 }
 
+                p->other = otherhospital;
+                otherhospital++;
+
                 coordinate_patient_to_room(p);
 
                 if (print_new_patient) {
@@ -354,7 +380,7 @@ bool do_the_task(int argc, char* argv[], bool print_new_patient) {
                         else
                             cout << 0 << endl;
                     }
-                    cout << "==========" << endl;
+
                     if (vip_room.size() > 0) {
                         cout << endl << "VIP medical room." << endl;
                     }
@@ -438,7 +464,7 @@ void coordinate_patient_to_room(Patient* p) {
     #if DEBUG
         cout << "insert patient to room" << endl;
     #endif
-    insertion(room_to_add->patients, p);
+    ns_priority_queue::insertion(room_to_add->patients, p);
     #if DEBUG
         cout << "DONE insert patient to room" << endl;
     #endif
@@ -461,6 +487,13 @@ Room *choose_room_for_new_patient(Patient *&p)
         if (p->prior_ord_emergency == 1 || p->prior_ord_old == 1 || p->prior_ord_children == 1)
         {
             int min_patients = 0, total_patients = 0, min_prior = 0;
+            if(vip_room.size() > 0)
+            {
+                if(vip_room[0]->patients != nullptr){
+                    min_patients = vip_room[0]->patients->total_patients;
+                    min_prior = vip_room[0]->patients->total_patients - vip_room[0]->ord_normal;
+                }
+            }
             for (int i = 0; i < vip_room.size(); i++)
             {
                 if (vip_room[i]->patients == nullptr)
@@ -484,8 +517,8 @@ Room *choose_room_for_new_patient(Patient *&p)
 
             for (int i = 0; i < vip_room.size(); i++)
             {
-                if (vip_room[i]->patients->total_patients == min_patients &&
-                    vip_room[i]->patients->total_patients - vip_room[i]->ord_normal - min_prior < per)
+                if (vip_room[i]->patients->total_patients - min_patients <= per &&
+                    vip_room[i]->patients->total_patients - vip_room[i]->ord_normal == min_prior )
                 {
                     return vip_room[i];
                 }
@@ -514,15 +547,17 @@ Room *choose_room_for_new_patient(Patient *&p)
         if (p->prior_ord_emergency == 1 || p->prior_ord_old == 1 || p->prior_ord_children == 1)
         {
             int min_patients = 0, total_patients = 0, min_prior = 0;
+            if(regular_room.size() > 0)
+            {
+                if(regular_room[0]->patients != nullptr){
+                    min_patients = regular_room[0]->patients->total_patients;
+                    min_prior = regular_room[0]->patients->total_patients - regular_room[0]->ord_normal;
+                }
+            }
             for (int i = 0; i < regular_room.size(); i++)
             {
                 if (regular_room[i]->patients == nullptr)
                     return regular_room[i];
-                total_patients += regular_room[i]->patients->total_patients;
-                if (regular_room[i]->patients == nullptr)
-                {
-                    min_prior = min_patients = 0;
-                }
                 else
                 {
                     if (regular_room[i]->patients->total_patients < min_patients)
@@ -534,18 +569,15 @@ Room *choose_room_for_new_patient(Patient *&p)
                         min_prior = regular_room[i]->patients->total_patients - regular_room[i]->ord_normal;
                     }
                 }
+                total_patients += regular_room[i]->patients->total_patients;
             }
 
             int per = ceil(total_patients * regular_room.size() / 100);
 
             for (int i = 0; i < regular_room.size(); i++)
             {
-                if (regular_room[i]->patients == nullptr)
-                {
-                    return regular_room[i];
-                }
-                if (regular_room[i]->patients->total_patients == min_patients &&
-                    regular_room[i]->patients->total_patients - regular_room[i]->ord_normal - min_prior <= per &&
+                if (regular_room[i]->patients->total_patients - min_patients <= per &&
+                    regular_room[i]->patients->total_patients - regular_room[i]->ord_normal == min_prior &&
                     p->prior_ord_emergency + regular_room[i]->ord_emergency <= MAX_EMERGENCY_PATIENT_IN_REGULAR_ROOM)
                 {
                     return regular_room[i];
@@ -578,69 +610,67 @@ void update_medical_room(Room *room, int number_of_finished_patients)
     {
         ns_priority_queue::deletion(room->patients);
     }
-    for (int i = 0; i < number_of_finished_patients; i++)
+
+    if (room->type == 'R')
     {
-        if (room->type == 'R')
+        Room* virtual_room = new Room;
+        Patient* p;
+        Patient* copy_p;
+        Patient* paste_p;
+        for(int i = 0; i < regular_room.size(); i++)
         {
-            // find room has prior cases patient max
-            int ind_max = 0, max = 0;
-            for (int i = 0; i < regular_room.size(); i++)
+            p = ns_priority_queue::peak(regular_room[i]->patients);
+            while(p)
             {
-                if (regular_room[i]->patients && regular_room[i]->patients->total_patients - regular_room[i]->ord_normal > max)
-                {
-                    ind_max = i;
-                    max = regular_room[i]->patients->total_patients - regular_room[i]->ord_normal;
-                }
+                copy_p = new Patient;
+                *copy_p = *p;
+                ns_priority_queue::deletion(regular_room[i]->patients);
+                ns_priority_queue::insertion(virtual_room->patients,copy_p);
+                p = ns_priority_queue::peak(regular_room[i]->patients);
             }
-            if (regular_room[ind_max] == room || regular_room[ind_max]->patients == nullptr)
-                return;
-            // copy and paste to room
-            Patient *p = ns_priority_queue::peak(regular_room[ind_max]->patients);
-            Patient *copy_p = new Patient;
-            *copy_p = *p;
-            // copy_p->name = p->name;
-            // copy_p->age = p->age;
-            // copy_p->prior_ord_children = p->prior_ord_children;
-            // copy_p->prior_ord_emergency = p->prior_ord_emergency;
-            // copy_p->prior_ord_normal = p->prior_ord_normal;
-            // copy_p->prior_ord_old = p->prior_ord_old;
-            // copy_p->prior_ord_vip = p->prior_ord_vip;
-            // copy_p->year_of_birth = p->year_of_birth;
-
-            ns_priority_queue::insertion(room->patients, copy_p);
-            ns_priority_queue::deletion(regular_room[ind_max]->patients);
         }
-        else
+            p = ns_priority_queue::peak(virtual_room->patients);
+            while(p)
+            {
+                paste_p = new Patient;
+                *paste_p = *p;
+                ns_priority_queue::deletion(virtual_room->patients);
+                Room* paste_room = choose_room_for_new_patient(paste_p);
+                ns_priority_queue::insertion(paste_room->patients,paste_p);
+                p = ns_priority_queue::peak(virtual_room->patients);
+                paste_p->room = paste_room;
+        }
+    }
+    else
+    {
+        Room* virtual_room = new Room;
+        Patient* p;
+        Patient* copy_p;
+        Patient* paste_p;
+        for(int i = 0; i < vip_room.size(); i++)
         {
-            // find room has prior cases patient max
-            int ind_max = 0, max = 0;
-            for (int i = 0; i < vip_room.size(); i++)
+            p = ns_priority_queue::peak(vip_room[i]->patients);
+            while(p)
             {
-                if (vip_room[i]->patients && vip_room[i]->patients->total_patients - vip_room[i]->ord_normal > max)
-                {
-                    ind_max = i;
-                    max = vip_room[i]->patients->total_patients - vip_room[i]->ord_normal;
-                }
+                copy_p = new Patient;
+                *copy_p = *p;
+                ns_priority_queue::deletion(vip_room[i]->patients);
+                ns_priority_queue::insertion(virtual_room->patients,copy_p);
+                p = ns_priority_queue::peak(vip_room[i]->patients);
             }
-            if (vip_room[ind_max] == room || vip_room[ind_max]->patients == nullptr)
-                return;
-            // copy and paste to room
-            Patient *p = ns_priority_queue::peak(vip_room[ind_max]->patients);
-            Patient *copy_p = new Patient;
-            *copy_p = *p;
-            // copy_p->name = p->name;
-            // copy_p->age = p->age;
-            // copy_p->prior_ord_children = p->prior_ord_children;
-            // copy_p->prior_ord_emergency = p->prior_ord_emergency;
-            // copy_p->prior_ord_normal = p->prior_ord_normal;
-            // copy_p->prior_ord_old = p->prior_ord_old;
-            // copy_p->prior_ord_vip = p->prior_ord_vip;
-            // copy_p->year_of_birth = p->year_of_birth;
-
-            ns_priority_queue::insertion(room->patients, copy_p);
-            ns_priority_queue::deletion(regular_room[ind_max]->patients);
         }
-    } // end for loop
+        p = ns_priority_queue::peak(virtual_room->patients);
+        while(p)
+        {
+            paste_p = new Patient;
+            *paste_p = *p;
+            ns_priority_queue::deletion(virtual_room->patients);
+            Room* paste_room = choose_room_for_new_patient(paste_p);
+            ns_priority_queue::insertion(paste_room->patients,paste_p);
+            p = ns_priority_queue::peak(virtual_room->patients);
+            paste_p->room = paste_room;
+        }
+    }
 } // end function update_medical_room()
   /////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////
