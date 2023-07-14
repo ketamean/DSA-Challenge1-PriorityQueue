@@ -27,8 +27,7 @@ struct Patient
     string name;
     int year_of_birth, age;
     bool prior_ord_vip;
-    int prior_ord_emergency; // if the patient priority is `Emergency`, prior_ord_emergency = ord number of this patient among emergency patients (in 0-base);
-                             // otherwise `prior_ord_emergency` = -1
+    bool prior_ord_emergency;
     int prior_ord_old;       // if the patient priority is `Old`, prior_ord_old = ord number of this patient among the old (in 0-base);
                              // otherwise `prior_ord_old` = -1
     int prior_ord_children;  // if the patient priority is `Children`, prior_ord_children = ord number of this patient among children (in 0-base);
@@ -41,8 +40,8 @@ struct Patient
         name = "";
         year_of_birth = -1;
         age = -1;
-        prior_ord_vip = false;
-        prior_ord_emergency = prior_ord_old = prior_ord_children = prior_ord_normal = -1;
+        prior_ord_vip = prior_ord_emergency = false;
+        prior_ord_old = prior_ord_children = prior_ord_normal = -1;
         room = nullptr;
     }
 }; // end struct Patient
