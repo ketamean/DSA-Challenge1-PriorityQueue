@@ -147,7 +147,21 @@ void open_medical_room(int number_of_regular_room, int number_of_vip_room) {
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
 void print_one_patient(Patient* p) {
-    cout << p->name << " " << p->year_of_birth << " " << p->room->type << p->room->no << endl;
+    cout << p->name << " " << p->age << " ";
+    if (p->prior_ord_vip >= 0) {
+        cout << "VIP ";
+    }
+
+    if (p->prior_ord_emergency >= 0) {
+        cout << "Emergency ";
+    } else if (p->prior_ord_old >= 0) {
+        cout << "Old ";
+    } else if (p->prior_ord_children >= 0) {
+        cout << "Children ";
+    } else {
+        cout << "Normal-patient ";
+    }
+    cout << p->room->type << p->room->no << endl;
 }
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
@@ -198,67 +212,127 @@ bool do_the_task(int argc, char* argv[], bool print_new_patient) {
             break;
 
         case New:
-            {
+            {   
+                enum CASE {NEW_E, NEW_V, NEW_E_V, NEW_};
+                CASE status;
                 Patient* p = nullptr;
-                if (argc == 2) {
-                    // > New filename
-                    ifstream ifs;
-                    ifs.open(string(argv[1]));
-                    string tmp_str;
-                    char* file_argv[6], *tmp_cstr;
-                    int file_argc;
-                    
-                    if (!ifs.eof()) {
-                        cout << "Cannot open file " << string(argv[1]) << endl;
-                        break;
-                    }
-                    cout << "Adding patients..." << endl; 
-                    while (!ifs.eof()) {
-                        getline(ifs, tmp_str);
-                        strcpy(tmp_cstr, tmp_str.c_str());
-                        generate_command_arguments(tmp_cstr, file_argc, file_argv);
-                        do_the_task(file_argc, file_argv, true);
-
-                        // deallocate argv[i]
-                        while (file_argc > 0) {
-                            file_argc--;
-                            delete[] file_argv[file_argc];
+                if (print_new_patient) { // call do_the_task() within the command `New filename`
+                    if (argc == 3) {
+                        // > New name year_of_birth
+                        status = NEW_;
+                    } else if (argc == 5) {
+                        // > New e v name year_of_birth
+                        status = NEW_E_V;
+                    } else { // argc == 4
+                        if (argv[1][0] == 'e') {
+                            // > New e name year_of_birth
+                            status = NEW_E;
+                        } else {
+                            // > New v name year_of_birth
+                            status = NEW_V;
                         }
                     }
-                    ifs.close();
-                } else if (argc == 3) {
-                    // > New Name Year_of_birth
+                } else {
+                    if (argc == 1) {
+                        // > New
+                        status = NEW_;
+                    } else if (argc == 3) {
+                        // > New e v
+                        status = NEW_E_V;
+                    } else { // argc == 2
+                        if (strlen(argv[1]) == 1) {
+                            if (argv[1][0] == 'e') {
+                                // > New e
+                                status = NEW_E;
+                            } else {
+                                // > New v
+                                status = NEW_V;
+                            }
+                        } else {
+                            // > New filename
+                            ifstream ifs;
+                            ifs.open(string(argv[1]));
+                            string tmp_str;
+                            char* file_argv[6], *tmp_cstr;
+                            int file_argc;
+                            
+                            if (!ifs.eof()) {
+                                cout << "Cannot open file " << string(argv[1]) << endl;
+                                break;
+                            }
+                            cout << "Adding patients..." << endl; 
+                            while (!ifs.eof()) {
+                                getline(ifs, tmp_str);
+                                strcpy(tmp_cstr, tmp_str.c_str());
+                                generate_command_arguments(tmp_cstr, file_argc, file_argv);
+                                do_the_task(file_argc, file_argv, true);
+
+                                // deallocate argv[i]
+                                while (file_argc > 0) {
+                                    file_argc--;
+                                    delete[] file_argv[file_argc];
+                                }
+                            }
+                            ifs.close();
+                            break;
+                        }
+
+                    }
+                }
+
+                p = new Patient;
+                if (print_new_patient == false) {
+                    cout << ">> ";
+                    string tmp;
+
+                    getline(cin, tmp);
+                    // name year-of-birth
+
+                    char tmp_cstr[100];
+                    strcpy(tmp_cstr, tmp.c_str());
+                    char* pch = strtok(tmp_cstr, " ");
+                    p->name = string(pch);
+
+                    pch = strtok(nullptr, " ");
+                    p->year_of_birth = stoi(string(pch));
+                } else {
+                    p->name = string(argv[argc - 2]);
+                    p->age = stoi(string(argv[argc-1]));
+                }
+                
+                if (argc == 3) {
+                    // > New
                     p = new Patient;
                     p->name = string(argv[1]);
                     p->year_of_birth = stoi(string(argv[2]));
                     p->prior_ord_vip = false;
                 } else if (argc == 4) {
                     if (argv[1][0] == 'e') {
-                        // > New e Name Year_of_birth
+                        // > New e
                         p = new Patient;
                         p->name = string(argv[2]);
                         p->year_of_birth = stoi(string(argv[3]));
                         p->prior_ord_vip = false;
                         p->prior_ord_emergency = 1;
                     } else if (argv[1][0] == 'v') {
-                        // > New v Name Year_of_birth
+                        // > New v
                         p = new Patient;
                         p->name = string(argv[2]);
                         p->year_of_birth = stoi(string(argv[3]));
                         p->prior_ord_vip = true;
                     }
                 } else if (argc == 5) {
-                    // > New e v Name Year_of_birth
+                    // > New e v
                     p = new Patient;
                     p->name = string(argv[3]);
                     p->year_of_birth = stoi(string(argv[4]));
                     p->prior_ord_vip = true;
                     p->prior_ord_emergency = 1;
                 }
+                
 
                 if (p) {
                     p->age = CURRENT_YEAR - p->year_of_birth;
-                    cout << p->age << endl;
                     if (p->age >= 60) {
                         p->prior_ord_old = 1;
                     } else if (p->age <= 10) {
@@ -267,22 +341,7 @@ bool do_the_task(int argc, char* argv[], bool print_new_patient) {
                     coordinate_patient_to_room(p);
 
                     if (print_new_patient) {
-                        cout << p->name << " ";
-                        if (p->prior_ord_vip >= 0) {
-                            cout << "VIP ";
-                        }
-
-                        if (p->prior_ord_emergency >= 0) {
-                            cout << "Emergency ";
-                        } else if (p->prior_ord_old >= 0) {
-                            cout << "Old ";
-                        } else if (p->prior_ord_children >= 0) {
-                            cout << "Children ";
-                        } else {
-                            cout << "Normal patient ";
-                        }
-                        
-                        cout << p->room->type << p->room->no << endl;
+                        print_one_patient(p);
                     }
                 }
             }
@@ -365,9 +424,8 @@ void coordinate_patient_to_room(Patient* p) {
     new_item->left = new_item->right = nullptr;
 
     // choose an approriate room
-    cout << "choose room" << endl;
     Room* room_to_add = choose_room_for_new_patient(p);
-
+    p->room = room_to_add;
     if (p->prior_ord_emergency == 1) {
         p->prior_ord_emergency = room_to_add->ord_emergency++;
     } else if (p->prior_ord_old == 1) {
@@ -377,9 +435,7 @@ void coordinate_patient_to_room(Patient* p) {
     } else {
         p->prior_ord_normal = room_to_add->ord_normal++;
     }
-    cout << "insert" << endl;
     insertion(room_to_add->patients, p);
-    cout << "done insert" << endl;
 }
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
