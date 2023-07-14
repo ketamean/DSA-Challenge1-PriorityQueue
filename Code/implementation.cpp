@@ -169,13 +169,13 @@ void generate_command_arguments(char cmd[], int &argc, char* argv[]) {
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
 void open_medical_room(int number_of_regular_room, int number_of_vip_room) {
-    regular_room.reserve(number_of_regular_room);
+    global_variables::regular_room.reserve(number_of_regular_room);
     Room* r = nullptr;
     for (int i = 0; i < number_of_regular_room; ++i) {
         r = new Room;
         r->type = 'R';
         r->no = i+1;
-        regular_room.push_back(r);
+        global_variables::regular_room.push_back(r);
     }
 
     vip_room.reserve(number_of_vip_room);
@@ -183,25 +183,27 @@ void open_medical_room(int number_of_regular_room, int number_of_vip_room) {
         r = new Room;
         r->type = 'V';
         r->no = i+1;
-        vip_room.push_back(r);
+        global_variables::vip_room.push_back(r);
     }
 }
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
 void print_one_patient(Patient* p) {
-    cout << "\t" << p->name << " " << p->age << " ";
+    cout << "   " << setw(30) << left << p->name;
     if (p->prior_ord_vip) {
-        cout << "VIP ";
+        cout << setw(11) << left << "VIP";
     } else {
-        cout << "Normal-patient ";
+        cout << setw(11) << left << "non-VIP";
     }
 
-    if (p->prior_ord_emergency >= 0) 
-        cout << "Emergency ";
-    if (p->prior_ord_old >= 0) {
-        cout << "Old ";
+    if (p->prior_ord_emergency >= 0) {
+        cout << setw(21) << left << "Emergency";
+    } else if (p->prior_ord_old >= 0) {
+        cout << setw(21) << left << "Old";
     } else if (p->prior_ord_children >= 0) {
-        cout << "Children ";
+        cout << setw(21) << left << "Children";
+    } else {
+        cout << setw(21) << left << "Normal";
     }
     cout << p->room->type << p->room->no << endl;
 }
@@ -220,6 +222,11 @@ void preorder_print(Node* p) {
 /////////////////////////////////////////////////////////////////
 void print_patient_list(Room* room) {
     cout << "Room " << (char)room->type << room->no << ":" << endl;
+    cout << "   " << setfill('.') << setw(45) << left << "Name"
+         << setfill('.') << setw(11) << left << "Is VIP"
+         << setfill('.') << setw(21) << left << "Priority"
+                                     << left << "Room"
+                                     << setfill(' ') << endl;
     if (room->patients)
         preorder_print(room->patients->top);
 }
@@ -229,9 +236,9 @@ Room* get_room(string room) {
     char type_of_room = room[0];
     room.erase(room.begin());
     if (type_of_room == 'R') {
-        return regular_room[stoi(room)-1];
+        return global_variables::regular_room[stoi(room)-1];
     } else {
-        return vip_room[stoi(room)-1];
+        return global_variables::vip_room[stoi(room)-1];
     }
 }
 /////////////////////////////////////////////////////////////////
@@ -372,11 +379,11 @@ bool do_the_task(int argc, char* argv[], bool print_new_patient) {
                 if (argv[1][0] == 'A') {
                     // > See All
                     cout << "Regular medical room." << endl;
-                    for (int i = 0; i < regular_room.size(); ++i) {
-                        print_patient_list(regular_room[i]);
+                    for (int i = 0; i < global_variables::regular_room.size(); ++i) {
+                        print_patient_list(global_variables::regular_room[i]);
                         cout << "Number of waiting patients: ";
-                        if (regular_room[i]->patients)
-                            cout << regular_room[i]->patients->total_patients << endl;
+                        if (global_variables::regular_room[i]->patients)
+                            cout << global_variables::regular_room[i]->patients->total_patients << endl;
                         else
                             cout << 0 << endl;
                     }
@@ -384,11 +391,11 @@ bool do_the_task(int argc, char* argv[], bool print_new_patient) {
                     if (vip_room.size() > 0) {
                         cout << endl << "VIP medical room." << endl;
                     }
-                    for (int i = 0; i < vip_room.size(); ++i) {
-                        print_patient_list(vip_room[i]);
+                    for (int i = 0; i < global_variables::vip_room.size(); ++i) {
+                        print_patient_list(global_variables::vip_room[i]);
                         cout << "Number of waiting patients: ";
-                        if (vip_room[i]->patients)
-                            cout << vip_room[i]->patients->total_patients << endl;
+                        if (global_variables::vip_room[i]->patients)
+                            cout << global_variables::vip_room[i]->patients->total_patients << endl;
                         else
                             cout << 0 << endl;                    
                     }
@@ -448,6 +455,21 @@ void coordinate_patient_to_room(Patient* p) {
         cout << "choose room" << endl;
     #endif
     Room* room_to_add = choose_room_for_new_patient(p);
+    if (room_to_add == nullptr) {
+        cout << "Room NULL" << endl;
+        // deallocate
+        for (int i = 0; i < global_variables::regular_room.size(); ++i)
+        {
+            ns_priority_queue::delete_all_priority_queue(global_variables::regular_room[i]->patients);
+            delete global_variables::regular_room[i];
+        }
+        for (int i = 0; i < global_variables::vip_room.size(); ++i)
+        {
+            ns_priority_queue::delete_all_priority_queue(global_variables::vip_room[i]->patients);
+            delete global_variables::vip_room[i];
+        }
+        exit(1);
+    }
     #if DEBUG
         cout << "DONE choose room" << endl;
     #endif
@@ -484,7 +506,7 @@ Room *choose_room_for_new_patient(Patient *&p)
     if (p->prior_ord_vip)
     {
         // add vip
-        if (p->prior_ord_emergency == 1 || p->prior_ord_old == 1 || p->prior_ord_children == 1)
+        if (p->prior_ord_emergency || p->prior_ord_old || p->prior_ord_children)
         {
             int min_patients = 0, total_patients = 0, min_prior = 0;
             if(vip_room.size() > 0)
@@ -496,49 +518,49 @@ Room *choose_room_for_new_patient(Patient *&p)
             }
             for (int i = 0; i < vip_room.size(); i++)
             {
-                if (vip_room[i]->patients == nullptr)
-                    return vip_room[i];
-                total_patients += vip_room[i]->patients->total_patients;
+                if (global_variables::vip_room[i]->patients == nullptr)
+                    return global_variables::vip_room[i];
+                total_patients += global_variables::vip_room[i]->patients->total_patients;
 
                 // find minimum number of patients
-                if (vip_room[i]->patients->total_patients < min_patients)
+                if (global_variables::vip_room[i]->patients->total_patients < min_patients)
                 {
-                    min_patients = vip_room[i]->patients->total_patients;
+                    min_patients = global_variables::vip_room[i]->patients->total_patients;
                 }
 
                 // find minimum prior
-                if (vip_room[i]->patients->total_patients - vip_room[i]->ord_normal < min_prior)
+                if (global_variables::vip_room[i]->patients->total_patients - global_variables::vip_room[i]->ord_normal < min_prior)
                 {
-                    min_prior = vip_room[i]->patients->total_patients - vip_room[i]->ord_normal;
+                    min_prior = global_variables::vip_room[i]->patients->total_patients - global_variables::vip_room[i]->ord_normal;
                 }
             }
 
-            int per = ceil(total_patients * vip_room.size() / 100);
-
-            for (int i = 0; i < vip_room.size(); i++)
+            int per = ceil(total_patients * global_variables::vip_room.size() / 100.0);
+            per = max(per, 1);
+            for (int i = 0; i < global_variables::vip_room.size(); i++)
             {
                 if (vip_room[i]->patients->total_patients - min_patients <= per &&
                     vip_room[i]->patients->total_patients - vip_room[i]->ord_normal == min_prior )
                 {
-                    return vip_room[i];
+                    return global_variables::vip_room[i];
                 }
             }
         }
         else // not priority case
         {
             int ind_min = 0;
-            for (int i = 0; i < vip_room.size(); i++)
+            for (int i = 0; i < global_variables::vip_room.size(); i++)
             {
-                if (vip_room[i]->patients == nullptr)
+                if (global_variables::vip_room[i]->patients == nullptr)
                 {
-                    return vip_room[i];
+                    return global_variables::vip_room[i];
                 }
-                if (vip_room[i]->patients->total_patients < vip_room[ind_min]->patients->total_patients)
+                if (global_variables::vip_room[i]->patients->total_patients < global_variables::vip_room[ind_min]->patients->total_patients)
                 {
                     ind_min = i;
                 }
             }
-            return vip_room[ind_min];
+            return global_variables::vip_room[ind_min];
         }
     }
     else
@@ -560,27 +582,27 @@ Room *choose_room_for_new_patient(Patient *&p)
                     return regular_room[i];
                 else
                 {
-                    if (regular_room[i]->patients->total_patients < min_patients)
+                    if (global_variables::regular_room[i]->patients->total_patients < min_patients)
                     {
-                        min_patients = regular_room[i]->patients->total_patients;
+                        min_patients = global_variables::regular_room[i]->patients->total_patients;
                     }
-                    if (regular_room[i]->patients->total_patients - regular_room[i]->ord_normal < min_prior)
+                    if (global_variables::regular_room[i]->patients->total_patients - global_variables::regular_room[i]->ord_normal < min_prior)
                     {
-                        min_prior = regular_room[i]->patients->total_patients - regular_room[i]->ord_normal;
+                        min_prior = global_variables::regular_room[i]->patients->total_patients - global_variables::regular_room[i]->ord_normal;
                     }
                 }
                 total_patients += regular_room[i]->patients->total_patients;
             }
 
-            int per = ceil(total_patients * regular_room.size() / 100);
-
-            for (int i = 0; i < regular_room.size(); i++)
+            int per = ceil(total_patients * global_variables::regular_room.size() / 100.0);
+            per = max(per, 1);
+            for (int i = 0; i < global_variables::regular_room.size(); i++)
             {
                 if (regular_room[i]->patients->total_patients - min_patients <= per &&
                     regular_room[i]->patients->total_patients - regular_room[i]->ord_normal == min_prior &&
                     p->prior_ord_emergency + regular_room[i]->ord_emergency <= MAX_EMERGENCY_PATIENT_IN_REGULAR_ROOM)
                 {
-                    return regular_room[i];
+                    return global_variables::regular_room[i];
                 }
             }
             p->prior_ord_vip = true;
@@ -589,16 +611,16 @@ Room *choose_room_for_new_patient(Patient *&p)
         else // not priority case, normal patient
         {
             int ind_min = 0;
-            for (int i = 0; i < regular_room.size(); i++)
+            for (int i = 0; i < global_variables::regular_room.size(); i++)
             {
-                if (regular_room[i]->patients == nullptr)
-                    return regular_room[i];
-                if (regular_room[i]->patients->total_patients < regular_room[ind_min]->patients->total_patients)
+                if (global_variables::regular_room[i]->patients == nullptr)
+                    return global_variables::regular_room[i];
+                if (global_variables::regular_room[i]->patients->total_patients < global_variables::regular_room[ind_min]->patients->total_patients)
                 {
                     ind_min = i;
                 }
             }
-            return regular_room[ind_min];
+            return global_variables::regular_room[ind_min];
         }
     }
 } // end function choose_room_for_new_patient()
@@ -672,5 +694,5 @@ void update_medical_room(Room *room, int number_of_finished_patients)
         }
     }
 } // end function update_medical_room()
-  /////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
