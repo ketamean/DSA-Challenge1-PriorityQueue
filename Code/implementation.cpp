@@ -8,9 +8,9 @@ using namespace global_variables;
 short ns_priority_queue::compare_priority(Patient* p1, Patient* p2) {
     // p1 and p2 are both either vip or non-vip
 
-    if ((p1->prior_ord_emergency) ^ (p2->prior_ord_emergency)) {
+    if ((p1->prior_ord_emergency >= 0) ^ (p2->prior_ord_emergency >= 0)) {
         // if one of them is emergency and the other is not
-        if (p1->prior_ord_emergency && !p2->prior_ord_emergency) {
+        if (p1->prior_ord_emergency > p2->prior_ord_emergency) {
             // p1 is emergency and p2 is not
             return 1;
         } else {
@@ -72,7 +72,7 @@ Node *ns_priority_queue::merge(Node * h1, Node * h2)
         return merge1(h2, h1);
     else 
     {
-        if(h1->patient->other < h2->patient->other)
+        if(h1->patient->order < h2->patient->order)
             return merge1(h1, h2);
         else 
             return merge1(h2, h1);
@@ -198,9 +198,9 @@ void print_one_patient(Patient* p) {
 
     if (p->prior_ord_emergency) {
         cout << setw(21) << left << "Emergency";
-    } else if (p->prior_ord_old >= 0) {
+    } else if (p->prior_ord_old) {
         cout << setw(21) << left << "Old";
-    } else if (p->prior_ord_children >= 0) {
+    } else if (p->prior_ord_children) {
         cout << setw(21) << left << "Children";
     } else {
         cout << setw(21) << left << "Normal";
@@ -363,8 +363,8 @@ bool do_the_task(int argc, char* argv[], bool print_new_patient) {
                     p->prior_ord_children = 1;
                 }
 
-                p->other = otherhospital;
-                otherhospital++;
+                p->order = order_hospital;
+                order_hospital++;
 
                 coordinate_patient_to_room(p);
 
@@ -455,12 +455,28 @@ void coordinate_patient_to_room(Patient* p) {
         cout << "choose room" << endl;
     #endif
     Room* room_to_add = choose_room_for_new_patient(p);
-
+    if (room_to_add == nullptr) {
+        cout << "Room NULL" << endl;
+        // deallocate
+        for (int i = 0; i < global_variables::regular_room.size(); ++i)
+        {
+            ns_priority_queue::delete_all_priority_queue(global_variables::regular_room[i]->patients);
+            delete global_variables::regular_room[i];
+        }
+        for (int i = 0; i < global_variables::vip_room.size(); ++i)
+        {
+            ns_priority_queue::delete_all_priority_queue(global_variables::vip_room[i]->patients);
+            delete global_variables::vip_room[i];
+        }
+        exit(1);
+    }
     #if DEBUG
         cout << "DONE choose room" << endl;
     #endif
     p->room = room_to_add;
-    if (p->prior_ord_old == 1) {
+    if (p->prior_ord_emergency == 1) {
+        p->prior_ord_emergency = room_to_add->ord_emergency++;
+    } else if (p->prior_ord_old == 1) {
         p->prior_ord_old = room_to_add->ord_old++;
     } else if (p->prior_ord_children == 1) {
         p->prior_ord_children = room_to_add->ord_children++;
@@ -490,7 +506,7 @@ Room *choose_room_for_new_patient(Patient *&p)
     if (p->prior_ord_vip)
     {
         // add vip
-        if (p->prior_ord_emergency || p->prior_ord_old || p->prior_ord_children)
+        if (p->prior_ord_emergency == 1 || p->prior_ord_old == 1 || p->prior_ord_children == 1)
         {
             int min_patients = 0, total_patients = 0, min_prior = 0;
             if(vip_room.size() > 0)
@@ -550,7 +566,7 @@ Room *choose_room_for_new_patient(Patient *&p)
     else
     {
         // patient is not vip
-        if (p->prior_ord_emergency || p->prior_ord_old || p->prior_ord_children == 1)
+        if (p->prior_ord_emergency == 1 || p->prior_ord_old == 1 || p->prior_ord_children == 1)
         {
             int min_patients = 0, total_patients = 0, min_prior = 0;
             if(regular_room.size() > 0)
@@ -612,9 +628,7 @@ Room *choose_room_for_new_patient(Patient *&p)
 /////////////////////////////////////////////////////////////////
 void update_medical_room(Room *room, int number_of_finished_patients)
 {
-    if (room->patients == nullptr) return;
-    int i = 0;
-    while (i < number_of_finished_patients && room->patients->top)
+    for (int i = 0; i < number_of_finished_patients; i++)
     {
         ns_priority_queue::deletion(room->patients);
     }

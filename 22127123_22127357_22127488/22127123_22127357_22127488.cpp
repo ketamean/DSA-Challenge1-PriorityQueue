@@ -32,13 +32,13 @@ struct Patient
     string name;
     int year_of_birth, age;
     bool prior_ord_vip;
-    int prior_ord_emergency; // if the patient priority is `Emergency`, prior_ord_emergency = ord number of this patient among emergency patients (in 0-base);
+    bool prior_ord_emergency;// if the patient priority is `Emergency`, prior_ord_emergency = ord number of this patient among emergency patients (in 0-base);
                              // otherwise `prior_ord_emergency` = -1
-    int prior_ord_old;       // if the patient priority is `Old`, prior_ord_old = ord number of this patient among the old (in 0-base);
+    bool prior_ord_old;      // if the patient priority is `Old`, prior_ord_old = ord number of this patient among the old (in 0-base);
                              // otherwise `prior_ord_old` = -1
-    int prior_ord_children;  // if the patient priority is `Children`, prior_ord_children = ord number of this patient among children (in 0-base);
+    bool prior_ord_children; // if the patient priority is `Children`, prior_ord_children = ord number of this patient among children (in 0-base);
                              // otherwise `prior_ord_children` = -1
-    int prior_ord_normal;    // if the patient priority is `Normal`, prior_ord_normal = ord number of this patient among the normal (in 0-base);
+    bool prior_ord_normal;   // if the patient priority is `Normal`, prior_ord_normal = ord number of this patient among the normal (in 0-base);
                              // otherwise `prior_ord_normal` = -1
     int order;               // other of adding
     Room *room;
@@ -49,7 +49,7 @@ struct Patient
         age = -1;
         prior_ord_vip = false;
         order = -1;
-        prior_ord_emergency = prior_ord_old = prior_ord_children = prior_ord_normal = -1;
+        prior_ord_emergency = prior_ord_old = prior_ord_children = prior_ord_normal = 0;
         room = nullptr;
     }
 }; // end struct Patient
@@ -296,14 +296,14 @@ short ns_priority_queue::compare_priority(Patient* p1, Patient* p2) {
 /////////////////////////////////////////////////////////////////
 int PriorityPatient(Patient *p)
 {
-    if(p == nullptr)
+    if (p == nullptr)
         return 0;
     int priorty = 0;
-    if(p->prior_ord_children >= 0)
+    if (p->prior_ord_children)
         priorty += 1;
-    if(p->prior_ord_old >= 0)
+    if (p->prior_ord_old)
         priorty += 2;
-    if(p->prior_ord_emergency >= 0)
+    if (p->prior_ord_emergency)
         priorty += 3;
     return priorty;
 }
@@ -430,11 +430,11 @@ void print_one_patient(Patient* p) {
         cout << setw(11) << left << "non-VIP";
     }
 
-    if (p->prior_ord_emergency >= 0) {
+    if (p->prior_ord_emergency) {
         cout << setw(21) << left << "Emergency";
-    } else if (p->prior_ord_old >= 0) {
+    } else if (p->prior_ord_old) {
         cout << setw(21) << left << "Old";
-    } else if (p->prior_ord_children >= 0) {
+    } else if (p->prior_ord_children) {
         cout << setw(21) << left << "Children";
     } else {
         cout << setw(21) << left << "Normal";
@@ -456,7 +456,7 @@ void preorder_print(Node* p) {
 /////////////////////////////////////////////////////////////////
 void print_patient_list(Room* room) {
     cout << "Room " << (char)room->type << room->no << ":" << endl;
-    cout << "   " << setfill('.') << setw(45) << left << "Name"
+    cout << "   " << setfill('.') << setw(30) << left << "Name"
          << setfill('.') << setw(11) << left << "Is VIP"
          << setfill('.') << setw(21) << left << "Priority"
                                      << left << "Room"
@@ -709,13 +709,13 @@ void coordinate_patient_to_room(Patient* p) {
     #endif
     p->room = room_to_add;
     if (p->prior_ord_emergency == 1) {
-        p->prior_ord_emergency = room_to_add->ord_emergency++;
+        p->prior_ord_emergency = ++room_to_add->ord_emergency;
     } else if (p->prior_ord_old == 1) {
-        p->prior_ord_old = room_to_add->ord_old++;
+        p->prior_ord_old = ++room_to_add->ord_old;
     } else if (p->prior_ord_children == 1) {
-        p->prior_ord_children = room_to_add->ord_children++;
+        p->prior_ord_children = ++room_to_add->ord_children;
     } else {
-        p->prior_ord_normal = room_to_add->ord_normal++;
+        p->prior_ord_normal = ++room_to_add->ord_normal;
     }
     #if DEBUG
         cout << "insert patient to room" << endl;
@@ -743,9 +743,9 @@ Room *choose_room_for_new_patient(Patient *&p)
         if (p->prior_ord_emergency == 1 || p->prior_ord_old == 1 || p->prior_ord_children == 1)
         {
             int min_patients = 0, total_patients = 0, min_prior = 0;
-            if(global_variables::vip_room.size() > 0)
+            if (global_variables::vip_room.size() > 0)
             {
-                if(global_variables::vip_room[0]->patients != nullptr){
+                if (global_variables::vip_room[0]->patients != nullptr){
                     min_patients = global_variables::vip_room[0]->patients->total_patients;
                     min_prior = global_variables::vip_room[0]->patients->total_patients - global_variables::vip_room[0]->ord_normal;
                 }
